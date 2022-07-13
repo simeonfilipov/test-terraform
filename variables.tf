@@ -22,3 +22,21 @@ variable "instance_type" { //default instance type for compute VMs
   type    = string
   default = "t2.micro"
 }
+
+#mysql username
+variable "db_user" {
+  type = string
+  sensitive = true
+}
+
+#mysql password
+variable "db_pass" {
+  type = string
+  sensitive = true
+}
+
+#db size instance
+variable "db_size" {
+  type = string
+  default = "db.t3.micro"
+}

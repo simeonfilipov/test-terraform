@@ -1,11 +1,11 @@
 resource "aws_instance" "instance-1" {
   ami           = var.aws_ami //defined in variables, Ubuntu 22.04
   instance_type = var.instance_type
-  subnet_id     = aws_subnet.staging-subnet.id
   key_name      = "ubuntu"
-  #subnet_id                   = aws_subnet.staging-subnet.id
-  #security_groups = [aws_security_group.instances.name]
-  vpc_security_group_ids = [aws_security_group.instances.id]
+network_interface {
+  device_index = 0
+  network_interface_id = aws_network_interface.instance1-nic.id
+}
   tags = {
     "name" = "test-instance1"
   }
@@ -16,14 +16,14 @@ resource "aws_instance" "instance-1" {
   EOF
 }
 # create second vm
-resource "aws_instance" "instance-3" {
+resource "aws_instance" "instance-2" {
   ami           = var.aws_ami //defined in variables, Ubuntu 22.04
   instance_type = var.instance_type
-  subnet_id     = aws_subnet.staging-subnet2.id
   key_name      = "ubuntu"
-  #subnet_id                   = aws_subnet.staging-subnet.id
-  vpc_security_group_ids = [aws_security_group.instances.id]
-  #security_groups = [aws_security_group.instances.name]
+network_interface {
+  device_index = 0
+  network_interface_id = aws_network_interface.instance2-nic.id
+}
   tags = {
     "name" = "test-instance2"
   }
