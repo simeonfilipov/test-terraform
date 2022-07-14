@@ -25,14 +25,6 @@ resource "aws_subnet" "staging-subnet2" {
   }
 }
 
-#creating staging subnet 3 - for public traffic to VMs
-resource "aws_subnet" "subnet-public" {
-  vpc_id = aws_vpc.staging-vpc.id
-  cidr_block = "10.182.30.0/24"
-  tags = {
-    "name" = "subnet-public"
-  }
-}
 #creating internet GW to use for LB and VMs for public access
 resource "aws_internet_gateway" "internet-gw" {
   vpc_id = aws_vpc.staging-vpc.id
@@ -40,19 +32,6 @@ resource "aws_internet_gateway" "internet-gw" {
     "name" = "internet-gw"
   }
 }
-#choosing staging VPC as default for provisioning
-/*  data "aws_vpc" "default-vpc" {
-  default = true
-}
-
-#choosing the subnet
-data "aws_subnets" "default-subnet" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default-vpc.id]
-  }
-} */
-
 ##### Part 2 - Security groups for Virtual Machines #####
 
 ##Security group virtual machines && rules ##
@@ -61,34 +40,41 @@ resource "aws_security_group" "instances" {
   vpc_id = aws_vpc.staging-vpc.id
 }
 
-#security group for public access to vms
-# resource "aws_security_group" "sg-public" {
-#   name = "public access to VMs"
-#   vpc_id = aws_vpc.staging-vpc.id
+# resource "aws_security_group_rule" "efs-in" {
+#   type              = "ingress"
+#   from_port         = 2049
+#   to_port           = 2049
+#   cidr_blocks       = ["0.0.0.0/0"]
+#   protocol          = "tcp"
+#   security_group_id = aws_security_group.instances.id
 # }
-# resource "aws_security_group_rule" "allow-ssh" {
-#   type = "ingress"
-#   security_group_id = aws_security_group.sg-public.id
-#   from_port = 22
-#   to_port = 22
-#   protocol = "tcp"
-#   cidr_blocks = [ "212.36.27.70/32" ]
-# }
-# resource "aws_security_group_rule" "public-ssh-out" {
-#   type = "egress"
-#   from_port = 0
-#   to_port = 0
-#   protocol = "-1"
-#   cidr_blocks = [ "0.0.0.0/0" ]
-#   security_group_id = aws_security_group.sg-public.id
-# }
+resource "aws_security_group_rule" "icmp" {
+  type = "ingress"
+  from_port = -1
+  to_port = -1
+  protocol = "icmp"
+  security_group_id = aws_security_group.instances.id
+  cidr_blocks = [ "0.0.0.0/0" ]
+}
+resource "aws_security_group" "mysql-sg" {
+  vpc_id = aws_vpc.staging-vpc.id
+  name = "mysql security group"
+}
+resource "aws_security_group_rule" "mysql-in" {
+  type              = "ingress"
+  from_port         = 3306
+  to_port           = 3306
+  cidr_blocks       = [aws_vpc.staging-vpc.cidr_block]
+  protocol          = "tcp"
+  security_group_id = aws_security_group.mysql-sg.id
+}
 #elastic IP for instance1
 resource "aws_eip" "instance1-eip" {
-  vpc = true
+  vpc               = true
   network_interface = aws_network_interface.instance1-nic.id
 }
 resource "aws_eip" "instance2-eip" {
-  vpc = true
+  vpc               = true
   network_interface = aws_network_interface.instance2-nic.id
 }
 resource "aws_security_group_rule" "allow-http-in" {
@@ -140,18 +126,18 @@ resource "aws_route_table" "route2" {
 
 #route table assoc
 resource "aws_route_table_association" "route-assoc-subnet1" {
-  subnet_id = aws_subnet.staging-subnet.id
+  subnet_id      = aws_subnet.staging-subnet.id
   route_table_id = aws_route_table.route1.id
 }
 resource "aws_route_table_association" "route-assoc-subnet2" {
-  subnet_id = aws_subnet.staging-subnet2.id
+  subnet_id      = aws_subnet.staging-subnet2.id
   route_table_id = aws_route_table.route2.id
 }
 
 
 #security group for the ALB#
 resource "aws_security_group" "alb" {
-  name = "vms-alb-security-group"
+  name   = "vms-alb-security-group"
   vpc_id = aws_vpc.staging-vpc.id
 }
 
@@ -172,6 +158,14 @@ resource "aws_security_group_rule" "allow-all-alb-out" {
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
+}
+resource "aws_security_group_rule" "instances-internet" {
+  type = "egress"
+  security_group_id = aws_security_group.instances.id
+  from_port = 0
+  to_port = 0
+  protocol = "-1"
+  cidr_blocks = [ "0.0.0.0/0" ]
 }
 
 #listener definition
