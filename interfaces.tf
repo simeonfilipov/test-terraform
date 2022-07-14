@@ -12,6 +12,17 @@ resource "aws_network_interface" "instance2-nic" {
   security_groups = [aws_security_group.instances.id]
 }
 
+# resource "aws_eip" "eip-instance1" {
+#   vpc                       = true
+#   network_interface         = aws_network_interface.instance1-nic.id
+#   instance = aws_instance.instance-1.id
+# }
+# resource "aws_eip" "eip-instance2" {
+#   vpc                       = true
+#   network_interface         = aws_network_interface.instance1-nic.id
+#   instance = aws_instance.instance-2.id
+# }
+
 # #NIC 1 for mysql RDS
 # resource "aws_network_interface" "mysqlnic1" {
 #   subnet_id       = aws_subnet.staging-subnet.id

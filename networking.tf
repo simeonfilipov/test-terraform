@@ -6,7 +6,7 @@ resource "aws_vpc" "staging-vpc" {
   }
 }
 ###### Part 1 - VPC & Subnet #####
-#creating staging subnet
+#creating staging subnet 1 - internal
 resource "aws_subnet" "staging-subnet" {
   vpc_id            = aws_vpc.staging-vpc.id
   cidr_block        = "10.182.10.0/24"
@@ -15,6 +15,7 @@ resource "aws_subnet" "staging-subnet" {
     "name" = "Staging"
   }
 }
+#creating staging subnet 2 - internal
 resource "aws_subnet" "staging-subnet2" {
   vpc_id            = aws_vpc.staging-vpc.id
   cidr_block        = "10.182.20.0/24"
@@ -24,6 +25,15 @@ resource "aws_subnet" "staging-subnet2" {
   }
 }
 
+#creating staging subnet 3 - for public traffic to VMs
+resource "aws_subnet" "subnet-public" {
+  vpc_id = aws_vpc.staging-vpc.id
+  cidr_block = "10.182.30.0/24"
+  tags = {
+    "name" = "subnet-public"
+  }
+}
+#creating internet GW to use for LB and VMs for public access
 resource "aws_internet_gateway" "internet-gw" {
   vpc_id = aws_vpc.staging-vpc.id
   tags = {
@@ -51,6 +61,36 @@ resource "aws_security_group" "instances" {
   vpc_id = aws_vpc.staging-vpc.id
 }
 
+#security group for public access to vms
+# resource "aws_security_group" "sg-public" {
+#   name = "public access to VMs"
+#   vpc_id = aws_vpc.staging-vpc.id
+# }
+# resource "aws_security_group_rule" "allow-ssh" {
+#   type = "ingress"
+#   security_group_id = aws_security_group.sg-public.id
+#   from_port = 22
+#   to_port = 22
+#   protocol = "tcp"
+#   cidr_blocks = [ "212.36.27.70/32" ]
+# }
+# resource "aws_security_group_rule" "public-ssh-out" {
+#   type = "egress"
+#   from_port = 0
+#   to_port = 0
+#   protocol = "-1"
+#   cidr_blocks = [ "0.0.0.0/0" ]
+#   security_group_id = aws_security_group.sg-public.id
+# }
+#elastic IP for instance1
+resource "aws_eip" "instance1-eip" {
+  vpc = true
+  network_interface = aws_network_interface.instance1-nic.id
+}
+resource "aws_eip" "instance2-eip" {
+  vpc = true
+  network_interface = aws_network_interface.instance2-nic.id
+}
 resource "aws_security_group_rule" "allow-http-in" {
   type              = "ingress"
   security_group_id = aws_security_group.instances.id
@@ -59,7 +99,14 @@ resource "aws_security_group_rule" "allow-http-in" {
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
 }
-
+resource "aws_security_group_rule" "allow-ssh-in" {
+  type              = "ingress"
+  security_group_id = aws_security_group.instances.id
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
 #### Part 3 - definition of LB && rules ####
 resource "aws_lb" "staging-load-balancer" {
   name               = "staging-load-balancer"
