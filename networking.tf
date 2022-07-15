@@ -59,17 +59,19 @@ resource "aws_security_group_rule" "icmp" {
   to_port = -1
   protocol = "icmp"
   security_group_id = aws_security_group.instances.id
-  cidr_blocks = [ "0.0.0.0/0" ]
+  cidr_blocks = [ aws_subnet.staging-subnet.cidr_block, aws_subnet.staging-subnet2.cidr_block ]
 }
+#creating security group for mysql RDS instance
 resource "aws_security_group" "mysql-sg" {
   vpc_id = aws_vpc.staging-vpc.id
   name = "mysql security group"
 }
+#Rule for accessing the RDS - only allowed subnets are the initially defined staging subnets
 resource "aws_security_group_rule" "mysql-in" {
   type              = "ingress"
   from_port         = 3306
   to_port           = 3306
-  cidr_blocks       = [aws_vpc.staging-vpc.cidr_block]
+  cidr_blocks       = [aws_subnet.staging-subnet.cidr_block, aws_subnet.staging-subnet2.cidr_block]
   protocol          = "tcp"
   security_group_id = aws_security_group.mysql-sg.id
 }
@@ -78,10 +80,12 @@ resource "aws_eip" "instance1-eip" {
   vpc               = true
   network_interface = aws_network_interface.instance1-nic.id
 }
+#elastic IP for instance2
 resource "aws_eip" "instance2-eip" {
   vpc               = true
   network_interface = aws_network_interface.instance2-nic.id
 }
+#SG for incoming traffic to port 8080 where server listens for connections
 resource "aws_security_group_rule" "allow-http-in" {
   type              = "ingress"
   security_group_id = aws_security_group.instances.id
@@ -90,6 +94,7 @@ resource "aws_security_group_rule" "allow-http-in" {
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
 }
+#SG allowing SSH
 resource "aws_security_group_rule" "allow-ssh-in" {
   type              = "ingress"
   security_group_id = aws_security_group.instances.id
@@ -98,14 +103,7 @@ resource "aws_security_group_rule" "allow-ssh-in" {
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
 }
-#### Part 3 - definition of LB && rules ####
-resource "aws_lb" "staging-load-balancer" {
-  name               = "staging-load-balancer"
-  load_balancer_type = "application"
-  subnets            = [aws_subnet.staging-subnet.id, aws_subnet.staging-subnet2.id]
-  security_groups    = [aws_security_group.alb.id]
-}
-
+#Part 3 - routing tables and associations
 #route table
 resource "aws_route_table" "route1" {
   vpc_id = aws_vpc.staging-vpc.id
@@ -139,7 +137,13 @@ resource "aws_route_table_association" "route-assoc-subnet2" {
   route_table_id = aws_route_table.route2.id
 }
 
-
+#### Part 4 - definition of LB && rules ####
+resource "aws_lb" "staging-load-balancer" {
+  name               = "staging-load-balancer"
+  load_balancer_type = "application"
+  subnets            = [aws_subnet.staging-subnet.id, aws_subnet.staging-subnet2.id]
+  security_groups    = [aws_security_group.alb.id]
+}
 #security group for the ALB#
 resource "aws_security_group" "alb" {
   name   = "vms-alb-security-group"
@@ -164,6 +168,7 @@ resource "aws_security_group_rule" "allow-all-alb-out" {
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
 }
+#allowing internet traffic of the EC2 instances
 resource "aws_security_group_rule" "instances-internet" {
   type = "egress"
   security_group_id = aws_security_group.instances.id
@@ -189,7 +194,7 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-#configuring listener on ALB
+#configuring listener rule on ALB
 resource "aws_lb_listener_rule" "instances" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 100

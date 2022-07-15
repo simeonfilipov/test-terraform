@@ -9,6 +9,9 @@ resource "aws_instance" "instance-1" {
   tags = {
     "name" = "test-instance1"
   }
+  depends_on = [
+    aws_efs_mount_target.efs-mount-sub1
+  ]
   connection {
     type        = "ssh"
     user        = "ubuntu"
@@ -41,6 +44,9 @@ resource "aws_instance" "instance-2" {
   tags = {
     "name" = "test-instance2"
   }
+  depends_on = [
+    aws_efs_mount_target.efs-mount-sub2
+  ]
   connection {
     type        = "ssh"
     user        = "ubuntu"
