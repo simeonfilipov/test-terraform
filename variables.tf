@@ -42,3 +42,7 @@ variable "db_size" {
   default = "db.t3.micro"
 }
 
+variable "sns-email" {
+  type = string
+  sensitive = true
+}
