@@ -39,15 +39,18 @@ resource "aws_security_group" "instances" {
   name   = "vm-instance-security-group"
   vpc_id = aws_vpc.staging-vpc.id
 }
-
-# resource "aws_security_group_rule" "efs-in" {
-#   type              = "ingress"
-#   from_port         = 2049
-#   to_port           = 2049
-#   cidr_blocks       = ["0.0.0.0/0"]
-#   protocol          = "tcp"
-#   security_group_id = aws_security_group.instances.id
-# }
+resource "aws_security_group" "efs-sg" {
+  name = "efs-sg"
+  vpc_id = aws_vpc.staging-vpc.id
+}
+ resource "aws_security_group_rule" "efs-in" {
+   type              = "ingress"
+   from_port         = 2049
+   to_port           = 2049
+   cidr_blocks       = [aws_vpc.staging-vpc.cidr_block]
+   protocol          = "tcp"
+   security_group_id = aws_security_group.efs-sg.id
+ }
 resource "aws_security_group_rule" "icmp" {
   type = "ingress"
   from_port = -1

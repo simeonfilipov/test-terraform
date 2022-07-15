@@ -1,3 +1,4 @@
+#creating mysql instance
  resource "aws_db_instance" "mysql-instance" {
    allocated_storage      = 10
    engine                 = "mysql"
@@ -9,6 +10,7 @@
    publicly_accessible    = false
    vpc_security_group_ids = [aws_security_group.mysql-sg.id]
    db_subnet_group_name = aws_db_subnet_group.mysql-subnets.name
+   skip_final_snapshot = true
    tags = {
      "name" = "mysql"
    }

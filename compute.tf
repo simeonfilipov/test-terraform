@@ -9,6 +9,20 @@ resource "aws_instance" "instance-1" {
   tags = {
     "name" = "test-instance1"
   }
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file("ubuntu.pem")
+    host        = aws_instance.instance-1.public_ip
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir /mnt/efs",
+      "sudo apt-get install nfs-common -y",
+      "sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${aws_efs_file_system.efs-instances.dns_name}:/ /mnt/efs",
+      "sudo apt install mysql-client -y"
+    ]
+  }
   user_data = <<-EOF
               #!/bin/bash
               echo "server 1" > index.html
@@ -26,6 +40,20 @@ resource "aws_instance" "instance-2" {
   }
   tags = {
     "name" = "test-instance2"
+  }
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file("ubuntu.pem")
+    host        = aws_instance.instance-2.public_ip
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir /mnt/efs",
+      "sudo apt-get install nfs-common -y",
+      "sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${aws_efs_file_system.efs-instances.dns_name}:/ /mnt/efs",
+      "sudo apt install mysql-client -y"
+    ]
   }
   user_data = <<-EOF
               #!/bin/bash

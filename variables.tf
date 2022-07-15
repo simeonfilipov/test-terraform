@@ -12,24 +12,25 @@ variable "aws_region" {
   type    = string
   default = "eu-central-1"
 }
-
+#OS AMI code
 variable "aws_ami" {
   type    = string
   default = "ami-065deacbcaac64cf2" //UBUNTU 22.04
 }
 
-variable "instance_type" { //default instance type for compute VMs
+#default instance type for compute VMs
+variable "instance_type" { 
   type    = string
   default = "t2.micro"
 }
 
-#mysql username
+#mysql username, defined in tfvars file
 variable "db_user" {
   type      = string
   sensitive = true
 }
 
-#mysql password
+#mysql password, defined in tfvars file
 variable "db_pass" {
   type      = string
   sensitive = true
@@ -40,3 +41,4 @@ variable "db_size" {
   type    = string
   default = "db.t3.micro"
 }
+
